@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using TMPro;
 using TMPro.EditorUtilities;
@@ -18,6 +19,7 @@ namespace TMP_MaterialView.Editor
         
         private Vector2 scrollPosition;
         
+        private static readonly string RootPathSave = Path.Combine("Library","TMP_MaterialView"); 
         private static readonly List<Texture2D> textures = new();
         private static readonly int layer = LayerMask.GetMask("Water");
         
@@ -39,19 +41,52 @@ namespace TMP_MaterialView.Editor
             
             window.UpdateMaterialPresets();
 
+            window.RestoreTextures();
             window.ShowUtility();
 
 
         }
 
+
+        private void RestoreTextures()
+        {
+	        if (Directory.Exists(RootPathSave))
+	        {
+		        textures.Clear();
+
+		        var directoryFont = Path.Combine(RootPathSave, useText.font.name);
+		        
+		        if (Directory.Exists(directoryFont))
+		        {
+			        foreach (var materialPreset in materialPresets)
+			        {
+				        var pathToPngImage = Path.Combine(directoryFont, materialPreset.name+".png");
+				        var bytes = File.ReadAllBytes(pathToPngImage);
+
+				        var texture2D = CreateEmpty2DTexture(1024, 1024);
+				        
+				        texture2D.LoadImage(bytes);
+
+				        textures.Add(texture2D);
+			        }
+		        }
+	        }
+
+        }
+        
         private void UpdateMaterialPresets()
         {
 	        materialPresets = TMP_EditorUtility.FindMaterialReferences(useText.font);
-
         }
 
         private void DrawText()
         {
+	        if (Directory.Exists(RootPathSave))
+	        {
+		        Directory.Delete(RootPathSave, true);
+	        }
+	        textures.Clear();
+
             var scene = StartEmptyScene();
             var camera = CreateCamera();
             
@@ -62,8 +97,10 @@ namespace TMP_MaterialView.Editor
             {
 	            text.fontSharedMaterial = materialPreset;
 	            var tex = GenerateTexture(camera);
-	            var trimTexture = TrimTexture(tex);
-	            textures.Add(trimTexture);
+	            SaveTexture(tex,materialPreset.name);
+	            //var trimTexture = TrimTexture(tex);
+	            textures.Add(tex);
+	            
             }
 
             
@@ -74,12 +111,28 @@ namespace TMP_MaterialView.Editor
 			EditorSceneManager.UnloadSceneAsync(scene);
         }
 
+        private void SaveTexture(Texture2D texture, string materialPresetName)
+        {
+	        var fontName = useText.font.name;
+	        var directoryFont = Path.Combine(RootPathSave,fontName);
+
+	        Directory.CreateDirectory(directoryFont);
+
+	        var pngBytes = texture.EncodeToPNG();
+	        
+	        File.WriteAllBytes(Path.Combine(directoryFont, $"{materialPresetName}.png"), pngBytes);
+        }
+
+        private Texture2D CreateEmpty2DTexture(int width, int height)
+        {
+	        return  new Texture2D(width, height, GraphicsFormat.R8G8B8A8_UNorm, TextureCreationFlags.None);
+        }
+        
         private Texture2D GenerateTexture(Camera camera)
         {
             RenderTexture.active = camera.targetTexture;
 
-            var texture2D = new Texture2D(camera.targetTexture.width, camera.targetTexture.height,
-                GraphicsFormat.R8G8B8A8_UNorm, TextureCreationFlags.None);
+            var texture2D = CreateEmpty2DTexture(camera.targetTexture.width, camera.targetTexture.height);
 
 
             camera.Render();
@@ -163,7 +216,6 @@ namespace TMP_MaterialView.Editor
             defaultText = EditorGUILayout.TextField("Text", defaultText);
             if (GUILayout.Button("Repaint text"))
             {
-	            textures.Clear();
                 DrawText();
             }
             
@@ -173,13 +225,20 @@ namespace TMP_MaterialView.Editor
             {
 	            var texture2D = textures[index];
 	            var controlRect = EditorGUILayout.GetControlRect(false, 60);
-	            if (GUI.Button(controlRect, texture2D))
+	            if (GUI.Button(controlRect,""))
 	            {
 		            useText.fontSharedMaterial = materialPresets[index];
 		            useText.ForceMeshUpdate();
 		            EditorUtility.SetDirty(useText);
 		            Close();
 	            }
+
+	            controlRect.width += 120;
+	            controlRect.height += 120;
+	            controlRect.x -= 60;
+	            controlRect.y -= 60;
+	            GUI.DrawTexture(controlRect, texture2D, ScaleMode.ScaleToFit);
+
             }
 
             GUILayout.EndVertical();
