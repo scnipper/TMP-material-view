@@ -21,7 +21,7 @@ namespace TMP_MaterialView.Editor
         private static readonly List<Texture2D> textures = new();
         private static readonly int layer = LayerMask.GetMask("Water");
         
-        private readonly Color clearColor = new Color(1f, 1f, 1f, 0f);
+        private readonly Color clearColor = new(1f, 1f, 1f, 0f);
         private Material[] materialPresets;
 
         public static void ShowWindow(TMP_Text text)
@@ -37,9 +37,16 @@ namespace TMP_MaterialView.Editor
 
             window.position = new Rect(mousePos.x, mousePos.y, 300, 400);
             
+            window.UpdateMaterialPresets();
 
             window.ShowUtility();
 
+
+        }
+
+        private void UpdateMaterialPresets()
+        {
+	        materialPresets = TMP_EditorUtility.FindMaterialReferences(useText.font);
 
         }
 
@@ -50,8 +57,7 @@ namespace TMP_MaterialView.Editor
             
             var text = CreateText();
             
-	        materialPresets = TMP_EditorUtility.FindMaterialReferences(useText.font);
-
+			UpdateMaterialPresets();
             foreach (var materialPreset in materialPresets)
             {
 	            text.fontSharedMaterial = materialPreset;
@@ -163,13 +169,19 @@ namespace TMP_MaterialView.Editor
             
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
             GUILayout.BeginVertical();
-            foreach (var texture2D in textures)
+            for (var index = 0; index < textures.Count; index++)
             {
-                var controlRect = EditorGUILayout.GetControlRect(false, 60);
-                
-                GUI.DrawTexture(controlRect, texture2D, ScaleMode.ScaleToFit);
+	            var texture2D = textures[index];
+	            var controlRect = EditorGUILayout.GetControlRect(false, 60);
+	            if (GUI.Button(controlRect, texture2D))
+	            {
+		            useText.fontSharedMaterial = materialPresets[index];
+		            useText.ForceMeshUpdate();
+		            EditorUtility.SetDirty(useText);
+		            Close();
+	            }
             }
-            
+
             GUILayout.EndVertical();
             EditorGUILayout.EndScrollView();
             
