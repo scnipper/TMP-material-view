@@ -16,19 +16,21 @@ namespace TMP_MaterialView.Editor
         [SerializeField] private string defaultText = "Test text";
         [SerializeField] private TMP_Text useText;
         
+        private Vector2 scrollPosition;
+        
         private static readonly List<Texture2D> textures = new();
         private static readonly int layer = LayerMask.GetMask("Water");
         
         private readonly Color clearColor = new Color(1f, 1f, 1f, 0f);
-        
+        private Material[] materialPresets;
+
         public static void ShowWindow(TMP_Text text)
         {
             var window = GetWindow<MaterialViewWindow>(true, "Material View");
             window.minSize = new Vector2(300, 400);
             window.maxSize = new Vector2(300, 400);
             window.useText = text;
-
-            ;
+            
 
 
             var mousePos = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
@@ -46,11 +48,23 @@ namespace TMP_MaterialView.Editor
             var scene = StartEmptyScene();
             var camera = CreateCamera();
             
-            CreateText();
+            var text = CreateText();
+            
+	        materialPresets = TMP_EditorUtility.FindMaterialReferences(useText.font);
 
-            var tex = GenerateTexture(camera);
-            var trimTexture = TrimTexture(tex);
-            textures.Add(trimTexture);
+            foreach (var materialPreset in materialPresets)
+            {
+	            text.fontSharedMaterial = materialPreset;
+	            var tex = GenerateTexture(camera);
+	            var trimTexture = TrimTexture(tex);
+	            textures.Add(trimTexture);
+            }
+
+            
+            DestroyImmediate(camera.targetTexture);
+            
+            
+            
 			EditorSceneManager.UnloadSceneAsync(scene);
         }
 
@@ -72,7 +86,7 @@ namespace TMP_MaterialView.Editor
             return texture2D;
         }
 
-        private void CreateText()
+        private TextMeshPro CreateText()
         {
             var goText = new GameObject("TEXT");
 
@@ -84,15 +98,15 @@ namespace TMP_MaterialView.Editor
             var rectText = textMeshPro.GetComponent<RectTransform>();
 
             rectText.sizeDelta = new Vector2(10, 5);
-            
+
             //textMeshPro.autoSizeTextContainer = true;
             textMeshPro.fontSizeMin = 2;
             textMeshPro.fontSize = 20;
             textMeshPro.font = useText.font;
             textMeshPro.text = defaultText;
-            textMeshPro.alignment = TextAlignmentOptions.Center; 
+            textMeshPro.alignment = TextAlignmentOptions.Center;
 
-            
+            return textMeshPro;
         }
         
         
@@ -147,13 +161,17 @@ namespace TMP_MaterialView.Editor
                 DrawText();
             }
             
+            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
+            GUILayout.BeginVertical();
             foreach (var texture2D in textures)
             {
-                var controlRect = EditorGUILayout.GetControlRect(false, 100);
-
+                var controlRect = EditorGUILayout.GetControlRect(false, 60);
+                
                 GUI.DrawTexture(controlRect, texture2D, ScaleMode.ScaleToFit);
             }
             
+            GUILayout.EndVertical();
+            EditorGUILayout.EndScrollView();
             
             GUILayout.EndVertical();
         }
