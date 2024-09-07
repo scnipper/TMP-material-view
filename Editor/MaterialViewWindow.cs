@@ -16,6 +16,7 @@ namespace TMP_MaterialView.Editor
             window.minSize = new Vector2(300, 400);
             window.maxSize = new Vector2(300, 400);
 
+            
 
             var mousePos = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
 
