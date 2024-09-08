@@ -81,9 +81,12 @@ namespace TMP_MaterialView.Editor
 
         private void DrawText()
         {
-	        if (Directory.Exists(RootPathSave))
+	        var fontName = useText.font.name;
+
+	        var pathToFolder = Path.Combine(RootPathSave,fontName);
+	        if (Directory.Exists(pathToFolder))
 	        {
-		        Directory.Delete(RootPathSave, true);
+		        Directory.Delete(pathToFolder, true);
 	        }
 	        textures.Clear();
 
@@ -224,6 +227,9 @@ namespace TMP_MaterialView.Editor
             for (var index = 0; index < textures.Count; index++)
             {
 	            var texture2D = textures[index];
+
+	            EditorGUILayout.BeginVertical("BOX");
+	            EditorGUILayout.LabelField(materialPresets[index].name);
 	            var controlRect = EditorGUILayout.GetControlRect(false, 60);
 	            if (GUI.Button(controlRect,""))
 	            {
@@ -238,6 +244,8 @@ namespace TMP_MaterialView.Editor
 	            controlRect.x -= 60;
 	            controlRect.y -= 60;
 	            GUI.DrawTexture(controlRect, texture2D, ScaleMode.ScaleToFit);
+	            
+	            EditorGUILayout.EndVertical();
 
             }
 
