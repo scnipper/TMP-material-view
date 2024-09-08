@@ -26,6 +26,7 @@ namespace TMP_MaterialView.Editor
 
         private readonly Color clearColor = new(1f, 1f, 1f, 0f);
         private Material[] materialPresets;
+        private string openPrefabPath;
 
         public static void ShowWindow(TMP_Text text)
         {
@@ -117,7 +118,11 @@ namespace TMP_MaterialView.Editor
             
             
             
-			EditorSceneManager.UnloadSceneAsync(scene);
+			EditorSceneManager.CloseScene(scene,true);
+			if (openPrefabPath != "")
+			{
+				PrefabStageUtility.OpenPrefab(openPrefabPath);
+			}
         }
 
         private void SaveTexture(Texture2D texture, string materialPresetName)
@@ -183,6 +188,16 @@ namespace TMP_MaterialView.Editor
         /// </summary>
         private Scene StartEmptyScene()
         {
+	        var currentPrefabStage = PrefabStageUtility.GetCurrentPrefabStage();
+	        if (currentPrefabStage != null)
+	        {
+		        openPrefabPath = currentPrefabStage.assetPath;
+	        }
+	        else
+	        {
+		        openPrefabPath = "";
+	        }
+			
             var tempScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Additive);
             tempScene.name = "Temp scene";
             
