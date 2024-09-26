@@ -249,6 +249,8 @@ namespace TMP_MaterialView.Editor
             {
 	            var texture2D = textures[index];
 
+	            if(index >= materialPresets.Length) break;
+	            
 	            EditorGUILayout.BeginVertical("BOX");
 	            EditorGUILayout.LabelField(materialPresets[index].name);
 	            var controlRect = EditorGUILayout.GetControlRect(false, 60);
