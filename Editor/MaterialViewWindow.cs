@@ -22,9 +22,11 @@ namespace TMP_MaterialView.Editor
         private static readonly string RootPathSave = Path.Combine("Library","TMP_MaterialView"); 
         private static readonly List<Texture2D> textures = new();
         private static readonly int layer = LayerMask.GetMask("Water");
-        
+        private static string lastFontUse;
+
         private readonly Color clearColor = new(1f, 1f, 1f, 0f);
         private Material[] materialPresets;
+        private string openPrefabPath;
 
         public static void ShowWindow(TMP_Text text)
         {
@@ -52,22 +54,27 @@ namespace TMP_MaterialView.Editor
         {
 	        if (Directory.Exists(RootPathSave))
 	        {
-		        textures.Clear();
-
-		        var directoryFont = Path.Combine(RootPathSave, useText.font.name);
-		        
-		        if (Directory.Exists(directoryFont))
+		        if (lastFontUse != useText.font.name)
 		        {
-			        foreach (var materialPreset in materialPresets)
+			        textures.Clear();
+
+			        var directoryFont = Path.Combine(RootPathSave, useText.font.name);
+		        
+			        if (Directory.Exists(directoryFont))
 			        {
-				        var pathToPngImage = Path.Combine(directoryFont, materialPreset.name+".png");
-				        var bytes = File.ReadAllBytes(pathToPngImage);
+				        foreach (var materialPreset in materialPresets)
+				        {
+					        var pathToPngImage = Path.Combine(directoryFont, materialPreset.name+".png");
+					        var bytes = File.ReadAllBytes(pathToPngImage);
 
-				        var texture2D = CreateEmpty2DTexture(1024, 1024);
+					        var texture2D = CreateEmpty2DTexture(1024, 1024);
 				        
-				        texture2D.LoadImage(bytes);
+					        texture2D.LoadImage(bytes);
 
-				        textures.Add(texture2D);
+					        textures.Add(texture2D);
+				        }
+
+				        lastFontUse = useText.font.name;
 			        }
 		        }
 	        }
@@ -81,9 +88,12 @@ namespace TMP_MaterialView.Editor
 
         private void DrawText()
         {
-	        if (Directory.Exists(RootPathSave))
+	        var fontName = useText.font.name;
+
+	        var pathToFolder = Path.Combine(RootPathSave,fontName);
+	        if (Directory.Exists(pathToFolder))
 	        {
-		        Directory.Delete(RootPathSave, true);
+		        Directory.Delete(pathToFolder, true);
 	        }
 	        textures.Clear();
 
@@ -108,7 +118,11 @@ namespace TMP_MaterialView.Editor
             
             
             
-			EditorSceneManager.UnloadSceneAsync(scene);
+			EditorSceneManager.CloseScene(scene,true);
+			if (openPrefabPath != "")
+			{
+				PrefabStageUtility.OpenPrefab(openPrefabPath);
+			}
         }
 
         private void SaveTexture(Texture2D texture, string materialPresetName)
@@ -174,6 +188,16 @@ namespace TMP_MaterialView.Editor
         /// </summary>
         private Scene StartEmptyScene()
         {
+	        var currentPrefabStage = PrefabStageUtility.GetCurrentPrefabStage();
+	        if (currentPrefabStage != null)
+	        {
+		        openPrefabPath = currentPrefabStage.assetPath;
+	        }
+	        else
+	        {
+		        openPrefabPath = "";
+	        }
+			
             var tempScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Additive);
             tempScene.name = "Temp scene";
             
@@ -224,6 +248,11 @@ namespace TMP_MaterialView.Editor
             for (var index = 0; index < textures.Count; index++)
             {
 	            var texture2D = textures[index];
+
+	            if(index >= materialPresets.Length) break;
+	            
+	            EditorGUILayout.BeginVertical("BOX");
+	            EditorGUILayout.LabelField(materialPresets[index].name);
 	            var controlRect = EditorGUILayout.GetControlRect(false, 60);
 	            if (GUI.Button(controlRect,""))
 	            {
@@ -238,6 +267,8 @@ namespace TMP_MaterialView.Editor
 	            controlRect.x -= 60;
 	            controlRect.y -= 60;
 	            GUI.DrawTexture(controlRect, texture2D, ScaleMode.ScaleToFit);
+	            
+	            EditorGUILayout.EndVertical();
 
             }
 
