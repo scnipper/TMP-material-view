@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using TMPro;
 using TMPro.EditorUtilities;
 using UnityEditor;
@@ -80,10 +81,21 @@ namespace TMP_MaterialView.Editor
 	        }
 
         }
+
+        private Material[] MaterialPresetsObtain(TMP_FontAsset fontAsset)
+        {
+	        var type = typeof(TMP_EditorUtility);
+
+	        var methodInfo = type.GetMethod("FindMaterialReferences",BindingFlags.Static | BindingFlags.NonPublic);
+
+	        return (Material[])methodInfo.Invoke(null, new []{fontAsset});
+        }
+        
         
         private void UpdateMaterialPresets()
         {
-	        materialPresets = TMP_EditorUtility.FindMaterialReferences(useText.font);
+	        
+	        materialPresets = MaterialPresetsObtain(useText.font);
         }
 
         private void DrawText()
@@ -113,8 +125,9 @@ namespace TMP_MaterialView.Editor
 	            
             }
 
-            
-            DestroyImmediate(camera.targetTexture);
+            var cameraTargetTexture = camera.targetTexture;
+            camera.targetTexture = null;
+            DestroyImmediate(cameraTargetTexture);
             
             
             
@@ -428,7 +441,7 @@ namespace TMP_MaterialView.Editor
         /// </summary>
         protected GUIContent[] GetMaterialPresets(TMP_FontAsset fontAsset)
         {
-            var materialPresets = TMP_EditorUtility.FindMaterialReferences(fontAsset);
+            var materialPresets = MaterialPresetsObtain(fontAsset);
             var presetNames = new GUIContent[materialPresets.Length];
 
             //m_MaterialPresetIndexLookup.Clear();
